@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Pz UI 测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎋 Pz UI 运行时测试</h1>
+    
+    <!-- 测试 1: 基础样式 -->
+    <div class="test-section">
+        <h2>测试 1: 基础样式</h2>
+        <div pz="flex; gap:2; items-center">
+            <div pz="p:4; bg:white">卡片 1</div>
+            <div pz="p:4; bg:white">卡片 2</div>
+            <div pz="p:4; bg:white">卡片 3</div>
+        </div>
+    </div>
+    
+    <!-- 测试 2: 动态切换 -->
+    <div class="test-section">
+        <h2>测试 2: 动态切换布局 (点击按钮)</h2>
+        <button id="toggleBtn" style="padding: 10px 20px; margin-bottom: 10px;">切换到纵向布局</button>
+        <div id="dynamicContainer" pz="flex; gap:2">
+            <div pz="p:6; color:red">项目 A</div>
+            <div pz="p:6; color:blue">项目 B</div>
+            <div pz="p:6; color:green">项目 C</div>
+        </div>
+    </div>
+    
+    <!-- 测试 3: 显示隐藏 -->
+    <div class="test-section">
+        <h2>测试 3: 显示/隐藏</h2>
+        <button id="toggleVisible" style="padding: 10px 20px; margin-bottom: 10px;">隐藏元素</button>
+        <div id="visibleBox" pz="p:4; bg:yellow; block">
+            我是一个可以显示/隐藏的盒子
+        </div>
+    </div>
+
+    <script type="module">
+        import Pz from '../src/main.js';
+        
+        console.log('✅ Pz UI 已加载');
+        
+        // 测试动态切换布局
+        const toggleBtn = document.getElementById('toggleBtn');
+        const dynamicContainer = document.getElementById('dynamicContainer');
+        let isHorizontal = true;
+        
+        toggleBtn.addEventListener('click', () => {
+            isHorizontal = !isHorizontal;
+            if (isHorizontal) {
+                dynamicContainer.setAttribute('pz', 'flex; gap:2');
+                toggleBtn.textContent = '切换到纵向布局';
+            } else {
+                dynamicContainer.setAttribute('pz', 'flex-col; gap:2');
+                toggleBtn.textContent = '切换到横向布局';
+            }
+            console.log('🔄 布局已切换，当前:', isHorizontal ? '横向' : '纵向');
+        });
+        
+        // 测试显示/隐藏
+        const toggleVisible = document.getElementById('toggleVisible');
+        const visibleBox = document.getElementById('visibleBox');
+        let isVisible = true;
+        
+        toggleVisible.addEventListener('click', () => {
+            isVisible = !isVisible;
+            if (isVisible) {
+                visibleBox.setAttribute('pz', 'p:4; bg:yellow; block');
+                toggleVisible.textContent = '隐藏元素';
+            } else {
+                visibleBox.setAttribute('pz', 'hidden');
+                toggleVisible.textContent = '显示元素';
+            }
+            console.log('👁️ 可见性已切换，当前:', isVisible ? '显示' : '隐藏');
+        });
+    </script>
+</body>
+</html>

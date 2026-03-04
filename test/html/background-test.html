@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Pz UI 背景色测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .test-box {
+            margin: 10px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Pz UI 背景色测试</h1>
+    
+    <div class="test-section">
+        <h2>测试 1: 三种背景色（静态 + 动态）</h2>
+        
+        <div class="test-box" id="box1" >
+            背景色：#fafafa (浅灰 → 黄色)
+        </div>
+        
+        <div class="test-box" id="box2" data-pz="background-ffffff">
+            背景色：#ffffff (白色 → 绿色)
+        </div>
+        
+        <div class="test-box" id="box3" data-pz="background-f0f0f0">
+            背景色：#f0f0f0 (更深的灰 → 蓝色)
+        </div>
+
+        <div class="test-box" data-pz="background-f0f0f0">
+            背景色：#f0f0f0 (更深的灰) - 静态不变
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="changeColors()" style="padding: 10px 20px; margin-right: 10px; background: #409EFF; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                🎨 动态变化颜色
+            </button>
+            <button onclick="resetColors()" style="padding: 10px 20px; background: #909399; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                🔄 重置颜色
+            </button>
+        </div>
+    </div>
+
+    <script src="pz-ui.js"></script>
+    <script>
+        // 动态变化函数
+        function changeColors() {
+            document.getElementById('box1').setAttribute('data-pz', 'background-ffeb3b');
+            document.getElementById('box2').setAttribute('data-pz', 'background-4caf50');
+            document.getElementById('box3').setAttribute('data-pz', 'background-2196f3');
+            console.log('🎨 颜色已动态变化！检查 CSS 是否正常生效');
+        }
+
+        function resetColors() {
+            document.getElementById('box1').setAttribute('data-pz', 'background-fafafa');
+            document.getElementById('box2').setAttribute('data-pz', 'background-ffffff');
+            document.getElementById('box3').setAttribute('data-pz', 'background-f0f0f0');
+            console.log('🔄 颜色已重置');
+        }
+    </script>
+</body>
+</html>

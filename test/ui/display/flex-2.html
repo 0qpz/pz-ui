@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flex-Direction 演示 - UI 框架开发参考</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --bg: #f3f4f6;
+            --text: #1f2937;
+            --box-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        h1 { margin-bottom: 10px; }
+        p { color: #6b7280; margin-bottom: 30px; max-width: 600px; text-align: center; }
+
+        /* 控制面板样式 */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+        button.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* 演示容器区域 */
+        .demo-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--box-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 这里的 class 会被 JS 动态修改 */
+        .flex-box {
+            display: flex;
+            /* 默认值，会被 JS 覆盖 */
+            flex-direction: row;
+            gap: 15px;
+            min-height: 300px;
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 子元素样式 */
+        .item {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            font-size: 1.2rem;
+            flex-shrink: 0; /* 防止在小屏幕挤压 */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* 标记起点的小圆点，帮助理解方向 */
+        .item::before {
+            content: 'Start';
+            position: absolute;
+            top: -20px;
+            font-size: 0.7rem;
+            color: #9ca3af;
+            font-weight: normal;
+        }
+
+        /* 针对不同方向的特殊标记调整 */
+        .flex-box[data-dir="row-reverse"] .item::before { left: auto; right: 0; }
+        .flex-box[data-dir="column"] .item::before { top: auto; left: -40px; }
+        .flex-box[data-dir="column-reverse"] .item::before { top: auto; bottom: -20px; left: -40px; }
+
+
+        .item:nth-child(1) { background-color: #ef4444; } /* Red */
+        .item:nth-child(2) { background-color: #f59e0b; } /* Orange */
+        .item:nth-child(3) { background-color: #10b981; } /* Green */
+        .item:nth-child(4) { background-color: #3b82f6; } /* Blue */
+        .item:nth-child(5) { background-color: #8b5cf6; } /* Purple */
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        code {
+            background: #dbeafe;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Flex-Direction 演示</h1>
+<p>点击下方按钮切换主轴方向。注意观察 <strong>1号元素 (红色)</strong> 的位置变化，它始终位于主轴的起始点。</p>
+
+<div class="controls">
+    <button onclick="setDirection('row')" id="btn-row" class="active">row (默认)</button>
+    <button onclick="setDirection('row-reverse')" id="btn-row-reverse">row-reverse</button>
+    <button onclick="setDirection('column')" id="btn-column">column</button>
+    <button onclick="setDirection('column-reverse')" id="btn-column-reverse">column-reverse</button>
+</div>
+
+<div class="demo-container">
+    <!-- data-dir 属性用于 CSS 选择器调整标记位置 -->
+    <div class="flex-box" id="flexBox" data-dir="row">
+        <div class="item">1</div>
+        <div class="item">2</div>
+        <div class="item">3</div>
+        <div class="item">4</div>
+        <div class="item">5</div>
+    </div>
+</div>
+
+<div class="info-panel" id="infoText">
+    当前模式：<code>row</code><br>
+    <strong>效果：</strong> 元素水平排列，从左到右。主轴为水平轴，交叉轴为垂直轴。<br>
+    <strong>UI 框架提示：</strong> 这是大多数导航栏、工具栏的默认布局方式。
+</div>
+
+<script>
+    const flexBox = document.getElementById('flexBox');
+    const infoText = document.getElementById('infoText');
+    const buttons = document.querySelectorAll('.controls button');
+
+    const descriptions = {
+        'row': {
+            desc: '元素水平排列，从左到右。主轴为水平轴。',
+            tip: 'UI 框架提示：默认值。适用于导航栏、横向表单、标签页。'
+        },
+        'row-reverse': {
+            desc: '元素水平排列，从右到左。主轴起点在右侧。',
+            tip: 'UI 框架提示：适用于从右向左的语言环境 (RTL)，或需要倒序排列的操作按钮组。'
+        },
+        'column': {
+            desc: '元素垂直排列，从上到下。主轴为垂直轴。',
+            tip: 'UI 框架提示：适用于侧边栏菜单、移动端垂直列表、卡片详情结构。'
+        },
+        'column-reverse': {
+            desc: '元素垂直排列，从下到上。主轴起点在底部。',
+            tip: 'UI 框架提示：适用于聊天界面（新消息在底部输入框上方），或底部固定的操作面板。'
+        }
+    };
+
+    function setDirection(dir) {
+        // 1. 设置 CSS
+        flexBox.style.flexDirection = dir;
+        flexBox.setAttribute('data-dir', dir);
+
+        // 2. 更新按钮状态
+        buttons.forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${dir}`).classList.add('active');
+
+        // 3. 更新文字说明
+        const info = descriptions[dir];
+        infoText.innerHTML = `
+                当前模式：<code>${dir}</code><br>
+                <strong>效果：</strong> ${info.desc}<br>
+                <strong>${info.tip}</strong>
+            `;
+    }
+</script>
+</body>
+</html>

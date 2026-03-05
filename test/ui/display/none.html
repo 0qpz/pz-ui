@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Display None vs Inline-block 演示</title>
+    <style>
+        /* =========================================
+           【唯一允许的 CSS 类】
+           仅用于隐藏元素
+           ========================================= */
+        .none {
+            display: none !important;
+        }
+    </style>
+</head>
+<!-- Body 样式全内联 -->
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px;">
+
+<div style="max-width: 800px; margin: 0 auto;">
+
+    <!-- 标题区域 (全内联) -->
+    <h1 style="text-align: center; color: #1f2937; margin-bottom: 40px;">
+        纯内联样式演示：<code>.none</code> vs <code>display: inline-block</code>
+    </h1>
+
+    <!-- 场景 1: 正常显示 (使用内联 display: inline-block) -->
+    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <h2 style="margin-top: 0; color: #10b981; border-bottom: 2px solid #d1fae5; padding-bottom: 10px;">场景 1: 正常显示</h2>
+        <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+            元素使用内联样式 <code style="background:#f3f4f6; padding:2px 4px; border-radius:4px;">style="display: inline-block; ..."</code>。<br>
+            它们会横向排列，且拥有宽高。
+        </p>
+
+        <div style="border: 2px dashed #10b981; padding: 20px; background: #ecfdf5; text-align: center;">
+            <!-- 盒子 1: 内联设置 display: inline-block -->
+            <div style="display: inline-block; width: 100px; height: 100px; line-height: 100px; background-color: #3b82f6; color: white; font-weight: bold; border-radius: 8px; margin: 5px; text-align: center;">
+                Box 1
+            </div>
+
+            <!-- 盒子 2: 内联设置 display: inline-block -->
+            <div style="display: inline-block; width: 100px; height: 100px; line-height: 100px; background-color: #8b5cf6; color: white; font-weight: bold; border-radius: 8px; margin: 5px; text-align: center;">
+                Box 2
+            </div>
+
+            <!-- 盒子 3: 内联设置 display: inline-block -->
+            <div style="display: inline-block; width: 100px; height: 100px; line-height: 100px; background-color: #f59e0b; color: white; font-weight: bold; border-radius: 8px; margin: 5px; text-align: center;">
+                Box 3
+            </div>
+        </div>
+    </div>
+
+    <!-- 场景 2: 隐藏元素 (使用 .none 类) -->
+    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <h2 style="margin-top: 0; color: #ef4444; border-bottom: 2px solid #fee2e2; padding-bottom: 10px;">场景 2: 隐藏元素</h2>
+        <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+            中间的盒子加上了 <code style="background:#f3f4f6; padding:2px 4px; border-radius:4px;">class="none"</code>。<br>
+            即使它内联样式里写了宽高和颜色，它也会<strong>彻底消失</strong>，不占任何空间。
+        </p>
+
+        <div style="border: 2px dashed #ef4444; padding: 20px; background: #fef2f2; text-align: center;">
+            <!-- 盒子 1: 正常显示 -->
+            <div style="display: inline-block; width: 100px; height: 100px; line-height: 100px; background-color: #3b82f6; color: white; font-weight: bold; border-radius: 8px; margin: 5px; text-align: center;">
+                Box 1
+            </div>
+
+            <!-- 盒子 2: 被隐藏！ (class="none" 优先级覆盖内联 display) -->
+            <!-- 注意：虽然 style 里写了 display: inline-block，但 .none 的 display: none 会生效 (假设样式表在后或特异性处理，通常 class 在 style 前需 !important 或层叠顺序，但在本例中，为了演示效果，我们依赖 CSS 规则：外部/内部样式表中的类如果定义在后，或者浏览器解析顺序。
+                 *修正*：内联样式优先级通常高于类样式。为了让 .none 生效，通常需要在 .none 上加 !important。
+                 为了严格符合“只显示 .none”且不加 !important 的困境，我们需要调整策略：
+                 策略 A: 在 .none 里加 !important (推荐做法)。
+                 策略 B: 移除被隐藏元素的内联 display 属性。
+
+                 为了演示“类控制隐藏”的威力，我在 .none 中加入 !important 是最合理的工程实践，否则内联样式永远无法被类覆盖。
+            -->
+            <div class="none" style="display: inline-block; width: 100px; height: 100px; line-height: 100px; background-color: #ef4444; color: white; font-weight: bold; border-radius: 8px; margin: 5px; text-align: center;">
+                Box 2 (Hidden)
+            </div>
+
+            <!-- 盒子 3: 正常显示 -->
+            <div style="display: inline-block; width: 100px; height: 100px; line-height: 100px; background-color: #f59e0b; color: white; font-weight: bold; border-radius: 8px; margin: 5px; text-align: center;">
+                Box 3
+            </div>
+        </div>
+        <p style="font-size: 13px; color: #9ca3af; margin-top: 15px; text-align: center;">
+            ↑ 看到吗？Box 2 不见了，Box 1 和 Box 3 自动靠拢。
+        </p>
+    </div>
+
+    <!-- 说明：关于优先级的技术注记 -->
+    <div style="background: #e5e7eb; padding: 15px; border-radius: 6px; color: #4b5563; font-size: 13px; line-height: 1.6;">
+        <strong>技术注记：</strong><br>
+        为了让 <code>.none</code> 类能覆盖内联样式中的 <code>display: inline-block</code>，CSS 定义中通常需要使用 <code>!important</code>。
+        <br>
+        已更新 CSS 为：<code>.none { display: none !important; }</code> (为了演示效果必须如此，否则内联样式优先级更高)。
+    </div>
+
+</div>
+
+</body>
+</html>

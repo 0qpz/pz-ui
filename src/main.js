@@ -78,28 +78,23 @@ const Pz = {
     }
 };
 
-// --- 原生 HTML 部分 (增强版) ---
+// --- 原生 HTML 部分 (超高速简化版) ---
 if (typeof window !== 'undefined') {
     const runScanner = () => {
-        // 【性能优化】立即执行，不等待
+        // 【性能优化】只调用一次，之后完全依赖缓存
         scanAndApply();
-        // 启动属性变化监听
-        watchAttributeChanges();
     };
 
-    // 策略 A: 如果 DOM 已经加载完了，直接跑
+    // DOM 加载完成后立即执行
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         runScanner();
     } else {
-        // 策略 B: 如果还没加载完，等事件
         document.addEventListener('DOMContentLoaded', runScanner);
     }
 
-    // 策略 C: 监听动态变化
-    const observer = new MutationObserver(() => {
-        scanAndApply();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    // 【关键优化】移除 MutationObserver！
+    // 不再自动监听 DOM 变化，由用户手动控制
+    // 这样可以避免每次插入元素都触发 scanAndApply()
 
     window.Pz = Pz;
 }

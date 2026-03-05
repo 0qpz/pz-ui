@@ -1,0 +1,2 @@
+实现的过程：
+将UI目录下的html文件中的class实现为pz中的原子化参数，比如.block { display: block;}对应的内容为data-pz="block;"

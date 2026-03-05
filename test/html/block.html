@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Block Demo</title>
+</head>
+<body style="font-family: sans-serif; background-color: #f3f4f6; padding: 40px; margin: 0;">
+
+<!-- 说明卡片：完全使用内联样式 -->
+<div style="max-width: 600px; margin: 0 auto 30px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+    <h1 style="margin: 0 0 10px 0; font-size: 24px; color: #1f2937;">.block</h1>
+    <p style="margin: 0; color: #6b7280; line-height: 1.6; font-size: 15px;">
+        <strong>作用：</strong>强制元素表现为<strong>块级元素</strong>。<br>
+        <strong>效果：</strong>元素独占一行，宽度自动填满父容器。
+    </p>
+</div>
+
+<!-- 演示区域：三个 div，仅使用 .block 类，样式全靠内联 -->
+
+<div data-pz="block" style="background-color: #3b82f6; color: white; padding: 20px; margin-bottom: 10px; text-align: center; font-weight: 500; border-radius: 4px;">
+    Block 1 (独占一行)
+</div>
+
+<div data-pz="block" style="background-color: #3b82f6; color: white; padding: 20px; margin-bottom: 10px; text-align: center; font-weight: 500; border-radius: 4px;">
+    Block 2 (独占一行)
+</div>
+
+<div data-pz="block" style="background-color: #3b82f6; color: white; padding: 20px; margin-bottom: 10px; text-align: center; font-weight: 500; border-radius: 4px;">
+    Block 3 (独占一行)
+</div>
+<script src="pz-ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Flex 批量性能测试 - Pz UI</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border: 2px solid #409EFF;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-width: 250px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px 15px;
+            cursor: pointer;
+            background: #409EFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .stats {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .test-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .info {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="controls">
+    <h3 style="margin: 0 0 10px 0;">⚡ 性能测试</h3>
+    <button onclick="addFlexComponents(100)">+100 Flex 组件</button>
+    <button onclick="addFlexComponents(1000)">+1000 Flex 组件</button>
+    <button onclick="addFlexComponents(5000)">+5000 Flex 组件</button>
+    <button onclick="addFlexComponents(10000)" style="background: #f56c6c;">🔥 +10000 Flex 组件</button>
+    <button onclick="batchChangeFlex()" style="background: #67c23a;">🔄 批量修改属性</button>
+    <button onclick="clearComponents()" style="background: #909399;">清空</button>
+    <div class="stats" id="stats">当前组件数：0</div>
+</div>
+
+<h1>🚀 Flex 批量性能测试（多属性组合）</h1>
+<p class="info">
+    测试目标：<strong>10000 个 Flex 组件</strong>，每个组件包含多个 data-pz 属性组合。<br>
+    预期目标：首次渲染 <strong>&lt; 20ms</strong>，后续复用 <strong>&lt; 5ms</strong>
+</p>
+
+<!-- 组件容器 -->
+<div id="container"></div>
+
+<script src="pz-ui.js"></script>
+<script>
+    let componentCount = 0;
+    const container = document.getElementById('container');
+    const statsEl = document.getElementById('stats');
+    
+    // 性能监控
+    function updateStats() {
+        statsEl.innerHTML = `
+            <div>当前组件数：<strong style="color: #409EFF; font-size: 16px;">${componentCount.toLocaleString()}</strong></div>
+            <div>总 DOM 元素：<strong>${document.body.getElementsByTagName('*').length.toLocaleString()}</strong> 个</div>
+        `;
+    }
+    
+    // Flex 属性组合配置
+    const FLEX_CONFIGS = [
+        // 基础布局组合
+        { pz: 'flex fx-row', name: '横向' },
+        { pz: 'flex fx-col', name: '纵向' },
+        { pz: 'flex fx-wrap', name: '换行' },
+        
+        // 主轴分布组合
+        { pz: 'flex fx-jc-start', name: '起始对齐' },
+        { pz: 'flex fx-jc-center', name: '居中对齐' },
+        { pz: 'flex fx-jc-between', name: '两端对齐' },
+        { pz: 'flex fx-jc-around', name: '周围间距' },
+        { pz: 'flex fx-jc-evenly', name: '均匀分布' },
+        
+        // 交叉轴对齐组合
+        { pz: 'flex fx-ai-start', name: '顶部对齐' },
+        { pz: 'flex fx-ai-center', name: '垂直居中' },
+        { pz: 'flex fx-ai-stretch', name: '拉伸填充' },
+        
+        // 多行对齐组合
+        { pz: 'flex fx-wrap fx-ac-start', name: '多行起始' },
+        { pz: 'flex fx-wrap fx-ac-center', name: '多行居中' },
+        { pz: 'flex fx-wrap fx-ac-between', name: '多行分布' },
+        
+        // 增长因子组合
+        { pz: 'flex fx-row fx-grow', name: '等比增长 (1)' },
+        { pz: 'flex fx-row fx-grow-2', name: '双倍增长 (2)' },
+        { pz: 'flex fx-row fx-grow-3', name: '三倍增长 (3)' },
+        
+        // 复杂组合
+        { pz: 'flex fx-wrap fx-jc-center fx-ai-center', name: '居中换行' },
+        { pz: 'flex fx-row fx-jc-between fx-ai-center', name: '两端垂直居中' },
+    ];
+    
+    // 添加 Flex 组件
+    function addFlexComponents(count) {
+        const startTime = performance.now();
+        
+        // 【性能优化】使用 DocumentFragment 批量插入
+        const fragment = document.createDocumentFragment();
+        
+        // 【性能优化】分批处理，每批 500 个
+        const BATCH_SIZE = 500;
+        for (let b = 0; b < count; b += BATCH_SIZE) {
+            const batchFragment = document.createDocumentFragment();
+            const end = Math.min(b + BATCH_SIZE, count);
+            
+            for (let i = b; i < end; i++) {
+                // 创建 Flex 容器
+                const flexContainer = document.createElement('div');
+                
+                // 随机选择一个配置
+                const configIndex = i % FLEX_CONFIGS.length;
+                const config = FLEX_CONFIGS[configIndex];
+                
+                // 设置 data-pz 属性（多属性组合）
+                flexContainer.setAttribute('data-pz', config.pz);
+                
+                // 添加样式和子元素
+                flexContainer.style.cssText = `
+                    gap: 8px;
+                    background-color: #e5e7eb;
+                    padding: 12px;
+                    border-radius: 6px;
+                    margin: 8px 0;
+                    min-height: 80px;
+                `;
+                
+                // 添加 3-5 个子元素（测试嵌套性能）
+                const childCount = 3 + (i % 3);
+                for (let j = 0; j < childCount; j++) {
+                    const child = document.createElement('div');
+                    
+                    // 子元素也使用 data-pz（测试多层解析）
+                    const childPz = `fx-grow-${(j % 3) + 1} background-${['fafafa','fef3c7','dbeafe'][j]}`;
+                    child.setAttribute('data-pz', childPz);
+                    
+                    child.style.cssText = `
+                        height: 50px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        color: white;
+                        background-color: ${['#3b82f6','#10b981','#f59e0b'][j]};
+                        min-width: 60px;
+                    `;
+                    
+                    child.textContent = `${config.name}-${j+1}`;
+                    flexContainer.appendChild(child);
+                }
+                
+                batchFragment.appendChild(flexContainer);
+            }
+            fragment.appendChild(batchFragment);
+        }
+        
+        container.appendChild(fragment);
+        componentCount += count;
+        updateStats();
+        
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        
+        // 计算性能指标
+        const avgPerComponent = duration / count;
+        const inpTarget = duration < 20 ? '✅' : duration < 50 ? '⚠️' : '❌';
+        const totalDOM = document.body.getElementsByTagName('*').length;
+        
+        console.log(`✅ 添加 ${count} 个 Flex 组件（多属性组合）`);
+        console.log(`   总耗时：${duration.toFixed(2)}ms`);
+        console.log(`   平均每个组件：${avgPerComponent.toFixed(3)}ms`);
+        console.log(`   🎯 INP 目标：${inpTarget} ${duration < 20 ? '<20ms' : duration < 50 ? '<50ms' : '>50ms'} (当前 ${duration.toFixed(2)}ms)`);
+        console.log(`   📊 总 DOM 元素数：${totalDOM.toLocaleString()} 个`);
+        console.log(`   🔧 使用的配置数：${FLEX_CONFIGS.length} 种`);
+        console.log(`   💡 缓存命中率预估：${((1 - FLEX_CONFIGS.length / count) * 100).toFixed(1)}%`);
+        
+        // 显示在页面上
+        const resultDiv = document.createElement('div');
+        resultDiv.style.cssText = 'padding: 10px; margin: 10px 0; background: #f0f0f0; border-radius: 4px;';
+        resultDiv.innerHTML = `
+            <strong>添加 ${count} 个组件：</strong>
+            耗时 <span style="color: ${duration < 50 ? 'green' : duration < 100 ? 'orange' : 'red'}">
+                ${duration.toFixed(2)}ms
+            </span> | 
+            平均 ${(duration / count).toFixed(3)}ms/组件 |
+            总 DOM: ${document.body.getElementsByTagName('*').length.toLocaleString()} 个
+        `;
+        container.insertBefore(resultDiv, container.firstChild);
+    }
+    
+    // 清空组件
+    function clearComponents() {
+        container.innerHTML = '';
+        componentCount = 0;
+        updateStats();
+        console.clear();
+        console.log('🗑️ 已清空所有组件');
+    }
+    
+    // 批量修改 Flex 属性 - 测试缓存和复用性能
+    function batchChangeFlex() {
+        const startTime = performance.now();
+        
+        // 获取所有带有 data-pz 的元素
+        const allElements = document.querySelectorAll('[data-pz]');
+        let changedCount = 0;
+        
+        // 新的属性组合
+        const newConfigs = [
+            'flex fx-row fx-jc-center',
+            'flex fx-col fx-ai-center',
+            'flex fx-wrap fx-jc-between',
+            'flex fx-row fx-grow-2',
+            'flex fx-col fx-grow'
+        ];
+        
+        // 批量更新每个元素的 data-pz 属性
+        allElements.forEach((el, index) => {
+            const oldPzValue = el.getAttribute('data-pz');
+            if (oldPzValue && oldPzValue.includes('flex')) {
+                const newIndex = index % newConfigs.length;
+                el.setAttribute('data-pz', newConfigs[newIndex]);
+                changedCount++;
+            }
+        });
+        
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        
+        console.log(`🔄 批量修改 Flex 属性完成：更新了 ${changedCount} 个元素`);
+        console.log(`   耗时：${duration.toFixed(2)}ms`);
+        console.log(`   平均每个元素：${(duration / Math.max(changedCount, 1)).toFixed(3)}ms`);
+        console.log(`   🎯 INP 目标：${duration < 50 ? '✅' : '⚠️'} ${duration < 50 ? '<50ms' : '>50ms'} (当前 ${duration.toFixed(2)}ms)`);
+        
+        // 显示在页面上
+        const resultDiv = document.createElement('div');
+        resultDiv.style.cssText = 'padding: 10px; margin: 10px 0; background: #e3f2fd; border-radius: 4px; border-left: 4px solid #2196f3;';
+        resultDiv.innerHTML = `
+            <strong>🔄 批量修改 Flex 属性：</strong>
+            更新 <span style="color: #1976d2; font-weight: bold;">${changedCount.toLocaleString()}</span> 个元素 |
+            耗时 <span style="color: ${duration < 50 ? 'green' : duration < 100 ? 'orange' : 'red'}">
+                ${duration.toFixed(2)}ms
+            </span> |
+            平均 ${(duration / Math.max(changedCount, 1)).toFixed(3)}ms/元素
+        `;
+        container.insertBefore(resultDiv, container.firstChild);
+    }
+    
+    // 初始化：添加一些测试组件
+    setTimeout(() => {
+        addFlexComponents(100);
+        console.log('🚀 Pz UI Flex 性能测试已就绪');
+        console.log('💡 提示：点击右侧按钮开始测试');
+        console.log('📊 目标：10000 个组件，多属性组合，首次渲染 <20ms');
+    }, 500);
+</script>
+
+</body>
+</html>

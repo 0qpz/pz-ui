@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Inline-block 极致纯净版</title>
+    <style>
+        /* =========================================
+           全局唯一的原子化 Class
+           ========================================= */
+        .inline-block {
+            display: inline-block;
+            vertical-align: top; /* 修正基线对齐，确保顶部整齐 */
+        }
+    </style>
+</head>
+<!-- body 样式全部内联 -->
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px;">
+
+<!-- 说明区域 (全内联) -->
+<div style="max-width: 600px; margin: 0 auto 30px auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center;">
+    <h2 style="margin: 0 0 10px 0; color: #1f2937; font-size: 24px;">.inline-block 极致纯净版</h2>
+    <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+        <strong>规则：</strong>CSS 中<strong>只有</strong> <code>.inline-block</code>。<br>
+        <strong>策略：</strong>父容器宽 600px，子元素宽 120px。<br>
+        <strong>结果：</strong>即使 HTML 有换行空格，依然稳稳横排。
+    </p>
+</div>
+
+<!--
+  核心演示区
+  父容器：明确宽度 600px
+  子元素：宽 120px + margin 20px = 140px
+  总宽需求：140 * 4 = 560px < 600px (安全！)
+-->
+<div style="width: 600px; margin: 0 auto; background: white; padding: 20px; border: 2px dashed #10b981; border-radius: 8px; box-sizing: border-box;">
+
+    <!-- 盒子 1 -->
+    <div class="inline-block" style="width: 120px; height: 80px; background-color: #3b82f6; color: white; text-align: center; line-height: 80px; margin: 10px; border-radius: 6px; font-weight: bold; box-sizing: border-box;">
+        Box 1
+    </div>
+
+    <!-- 盒子 2 -->
+    <div class="inline-block" style="width: 120px; height: 80px; background-color: #8b5cf6; color: white; text-align: center; line-height: 80px; margin: 10px; border-radius: 6px; font-weight: bold; box-sizing: border-box;">
+        Box 2
+    </div>
+
+    <!-- 盒子 3 -->
+    <div class="inline-block" style="width: 120px; height: 80px; background-color: #ec4899; color: white; text-align: center; line-height: 80px; margin: 10px; border-radius: 6px; font-weight: bold; box-sizing: border-box;">
+        Box 3
+    </div>
+
+    <!-- 盒子 4 -->
+    <div class="inline-block" style="width: 120px; height: 80px; background-color: #f59e0b; color: white; text-align: center; line-height: 80px; margin: 10px; border-radius: 6px; font-weight: bold; box-sizing: border-box;">
+        Box 4
+    </div>
+
+</div>
+
+<!-- 验证区域 (全内联) -->
+<div style="max-width: 600px; margin: 20px auto 0 auto; background: #e5e7eb; padding: 15px; border-radius: 6px; color: #4b5563; font-size: 14px; text-align: center;">
+    ↑ 上方盒子设置了 <code>margin: 10px</code> 和固定宽高。<br>
+    这证明了 <strong>.inline-block</strong> 兼具 inline 的并排能力和 block 的尺寸控制能力。
+</div>
+
+</body>
+</html>

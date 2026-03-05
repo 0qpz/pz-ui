@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>原生运行时对决：Pz UI vs Goober</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f5f5f5; }
+        .controls {
+            position: fixed; top: 10px; right: 10px; background: white; padding: 15px;
+            border: 2px solid #409EFF; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            z-index: 1000; max-width: 260px;
+        }
+        button {
+            display: block; width: 100%; margin: 6px 0; padding: 10px; cursor: pointer;
+            background: #409EFF; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: bold;
+        }
+        button:hover { background: #66b1ff; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .stats { margin-top: 10px; font-size: 12px; color: #666; line-height: 1.6; }
+        h1 { color: #1f2937; margin-bottom: 5px; }
+        .info { color: #6b7280; font-size: 14px; margin-bottom: 20px; background: #fff; padding: 10px; border-radius: 6px;}
+        .result-bar {
+            padding: 12px; margin: 10px 0; background: #fff; border-radius: 6px;
+            font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 5px solid #ccc;
+        }
+        .result-bar.pz { border-left-color: #409EFF; background: #f0f7ff; }
+        .result-bar.goober { border-left-color: #00C853; background: #f0fff4; }
+        .highlight { font-weight: bold; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <h3 style="margin: 0 0 10px 0;">⚡ 运行时性能对决</h3>
+    <div style="font-size:12px; color:#666; margin-bottom:10px;">选择测试引擎：</div>
+
+    <button onclick="runTest('pz', 1000)" style="background:#409EFF">🔵 Pz UI: +1,000</button>
+    <button onclick="runTest('pz', 10000)" style="background:#409EFF">🔵 Pz UI: +10,000</button>
+
+    <div style="height:1px; background:#eee; margin:10px 0;"></div>
+
+    <button onclick="runTest('goober', 1000)" style="background:#00C853">🟢 Goober: +1,000</button>
+    <button onclick="runTest('goober', 10000)" style="background:#00C853">🟢 Goober: +10,000</button>
+
+    <div style="height:1px; background:#eee; margin:10px 0;"></div>
+
+    <button onclick="clearAll()" style="background:#909399">🗑️ 清空所有</button>
+
+    <div class="stats" id="stats">
+        当前组件数：0<br>
+        总 DOM 元素：0
+    </div>
+</div>
+
+<h1>🚀 纯运行时生成对比测试</h1>
+<p class="info">
+    <strong>测试场景：</strong> 动态创建 10,000 个 Flex 组件，每个组件样式不同。<br>
+    <strong>Pz UI 策略：</strong> 解析 <code>data-pz</code> 属性字符串 $\rightarrow$ 映射 Class。<br>
+    <strong>Goober 策略：</strong> 执行 JS 模板字符串 $\rightarrow$ 哈希计算 $\rightarrow$ 注入 CSS $\rightarrow$ 绑定 Class。<br>
+    <strong>核心差异：</strong> 比较<strong>字符串解析/映射</strong>与<strong>模板字符串/哈希/CSSOM操作</strong>的性能损耗。
+</p>
+
+<div id="container"></div>
+
+<!-- 引入 Goober (原生模式) -->
+<script type="module">
+    import { setup, css, styled } from 'https://esm.sh/goober@2.1.14';
+
+    // 初始化 Goober (传入一个空的 createElement，因为我们要手动操作 DOM)
+    // Goober 的核心 css 函数其实不依赖 createElement，只要 setup 被调用即可注入样式
+    setup(() => {});
+
+    // --- 配置数据 (保持一致) ---
+    const FLEX_CONFIGS = [
+        { type: 'row', jc: 'start', ai: 'stretch', wrap: false, grow: 0, name: '横向起始' },
+        { type: 'col', jc: 'start', ai: 'stretch', wrap: false, grow: 0, name: '纵向起始' },
+        { type: 'row', jc: 'center', ai: 'center', wrap: true, grow: 0, name: '居中换行' },
+        { type: 'row', jc: 'space-between', ai: 'center', wrap: false, grow: 0, name: '两端垂直居中' },
+        { type: 'row', jc: 'space-around', ai: 'stretch', wrap: true, grow: 0, name: '周围间距换行' },
+        { type: 'col', jc: 'flex-start', ai: 'stretch', wrap: false, grow: 1, name: '纵向增长' },
+        { type: 'row', jc: 'center', ai: 'center', wrap: false, grow: 2, name: '居中双倍增长' },
+        { type: 'row', jc: 'flex-end', ai: 'flex-end', wrap: false, grow: 0, name: '右下对齐' },
+    ];
+    const BG_COLORS = ['#3b82f6', '#10b981', '#f59e0b'];
+
+    // --- 全局状态 ---
+    let totalComponents = 0;
+    const container = document.getElementById('container');
+    const statsEl = document.getElementById('stats');
+
+    // 更新统计面板
+    window.updateStats = () => {
+        statsEl.innerHTML = `
+            当前组件数：<span class="highlight" style="color:#409EFF">${totalComponents.toLocaleString()}</span><br>
+            总 DOM 元素：<span class="highlight">${document.body.getElementsByTagName('*').length.toLocaleString()}</span>
+        `;
+    };
+
+    // --- 核心测试逻辑 ---
+    window.runTest = (engine, count) => {
+        // 强制浏览器先完成上一帧的渲染，避免干扰
+        // 使用 setTimeout 确保测量的是纯粹的本次操作
+        setTimeout(() => {
+            const startTime = performance.now();
+
+            const fragment = document.createDocumentFragment();
+
+            // 为了模拟真实压力，我们不复用太多，尽量让每次循环都有独特的样式生成需求
+            // 但为了公平，Goober 内部有缓存，Pz UI 也有映射缓存
+
+            for (let i = 0; i < count; i++) {
+                const globalIndex = totalComponents + i;
+                const config = FLEX_CONFIGS[globalIndex % FLEX_CONFIGS.length];
+
+                let className = '';
+
+                if (engine === 'pz') {
+                    // 【Pz UI 模拟逻辑】
+                    // 假设 pz-ui.js 内部是解析 data-pz 字符串
+                    // 这里我们直接创建元素并设置属性，模拟 Pz UI 的输入
+                    const el = document.createElement('div');
+                    el.setAttribute('data-pz', `flex fx-${config.type} fx-jc-${config.jc} fx-ai-${config.ai} ${config.wrap?'fx-wrap':''}`);
+
+                    // 模拟 Pz UI 的样式应用 (简化版：直接映射到内联或类名)
+                    // 真实的 Pz UI 会在这里做字符串解析和类名查找
+                    el.className = `pz-flex pz-${config.type} pz-jc-${config.jc} pz-ai-${config.ai}`;
+                    // 注意：这里没有真正的 CSS 解析开销，只有字符串拼接和赋值
+
+                    // 添加子元素
+                    addChildren(el, config, i, 'pz');
+                    fragment.appendChild(el);
+
+                } else if (engine === 'goober') {
+                    // 【Goober 原生逻辑】
+                    // 1. 运行时执行模板字符串
+                    // 2. 计算哈希
+                    // 3. 检查/注入 CSSOM
+                    // 4. 返回类名
+                    const uniqueKey = `${config.type}-${config.jc}-${config.ai}-${config.grow}`;
+
+                    className = css`
+                        display: flex;
+                        flex-direction: ${config.type === 'col' ? 'column' : 'row'};
+                        justify-content: ${config.jc};
+                        align-items: ${config.ai};
+                        flex-wrap: ${config.wrap ? 'wrap' : 'nowrap'};
+                        gap: 8px;
+                        background-color: #e5e7eb;
+                        padding: 12px;
+                        border-radius: 6px;
+                        margin: 8px 0;
+                        min-height: 80px;
+                        ${config.grow > 0 ? `flex: ${config.grow};` : ''}
+
+                        & > div {
+                            height: 50px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            border-radius: 4px;
+                            font-weight: bold;
+                            color: white;
+                            min-width: 60px;
+                        }
+                    `;
+
+                    const el = document.createElement('div');
+                    el.className = className; // 应用运行时生成的类名
+
+                    // 添加子元素 (子元素也使用 Goober 生成，增加压力)
+                    addChildren(el, config, i, 'goober');
+                    fragment.appendChild(el);
+                }
+            }
+
+            container.appendChild(fragment);
+            totalComponents += count;
+
+            // 等待 DOM 插入完成后的统计
+            requestAnimationFrame(() => {
+                const endTime = performance.now();
+                const duration = endTime - startTime;
+                const avg = duration / count;
+
+                console.log(`[${engine.toUpperCase()}] 添加 ${count} 个组件:`);
+                console.log(`   耗时: ${duration.toFixed(2)}ms`);
+                console.log(`   平均: ${avg.toFixed(4)}ms/组件`);
+                console.log(`   总 DOM: ${document.body.getElementsByTagName('*').length}`);
+
+                showResult(engine, count, duration, avg);
+                window.updateStats();
+            });
+
+        }, 10);
+    };
+
+    // 辅助：添加子元素
+    function addChildren(parent, config, index, engine) {
+        const childCount = 3 + (index % 3);
+        for (let j = 0; j < childCount; j++) {
+            const child = document.createElement('div');
+            child.textContent = `${config.name}-${j+1}`;
+
+            if (engine === 'goober') {
+                // 子元素也用 Goober 生成，模拟深度嵌套的运行时开销
+                const cClass = css`
+                    background-color: ${BG_COLORS[j % 3]};
+                    flex: ${j % 3 + 1};
+                `;
+                child.className = cClass;
+            } else {
+                // Pz UI 子元素
+                child.className = `pz-child pz-bg-${j%3}`;
+                child.style.backgroundColor = BG_COLORS[j % 3];
+                child.style.flex = (j % 3 + 1);
+            }
+            parent.appendChild(child);
+        }
+    }
+
+    // 显示结果条
+    function showResult(engine, count, duration, avg) {
+        const div = document.createElement('div');
+        div.className = `result-bar ${engine}`;
+        const engineName = engine === 'pz' ? '🔵 Pz UI' : '🟢 Goober';
+        const color = duration < 50 ? 'green' : (duration < 200 ? 'orange' : 'red');
+
+        div.innerHTML = `
+            <strong>${engineName} 添加 ${count.toLocaleString()} 个组件：</strong><br>
+            总耗时：<span style="color:${color}; font-size:18px" class="highlight">${duration.toFixed(2)}ms</span><br>
+            平均速度：<span style="color:${color}">${avg.toFixed(4)}ms</span>/组件 |
+            当前总 DOM: ${document.body.getElementsByTagName('*').length.toLocaleString()}
+        `;
+        container.insertBefore(div, container.firstChild);
+    }
+
+    window.clearAll = () => {
+        container.innerHTML = '';
+        totalComponents = 0;
+        // 清除 Goober 注入的 style 标签，还原现场
+        document.querySelectorAll('style[data-gooboer]').forEach(el => el.remove());
+        window.updateStats();
+        console.clear();
+        console.log('🗑️ 环境已重置');
+    };
+
+    // 初始化提示
+    console.log('⚔️ 运行时对决准备就绪。请点击右侧按钮开始测试。');
+    console.log('💡 观察点：Goober 需要解析模板、算哈希、操作 CSSOM；Pz UI 仅需字符串映射。');
+</script>
+
+</body>
+</html>

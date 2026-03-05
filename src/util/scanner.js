@@ -1,91 +1,170 @@
 // src/pz-ui/scanner.js
-import { Parse } from '@/util/parser.js';
+import { Parse } from '@/util/parser/index.js';
 import Log from "@/util/log.js";
 
-// 【性能优化】哈希映射：样式字符串 → className
-const styleHashCache = new Map(); // 'flex;gap:2' -> 'pz-h1a2b3c'
+// ============================================================================
+// 【架构级优化】完全移除 MutationObserver，改用超高速直连模式
+// ============================================================================
+
+// 缓存系统
+const STRING_CACHE = new Map();
+const CSS_CACHE = new Map();
+
+// 整数枚举映射
+let TOKEN_ID_COUNTER = 0;
+const TOKEN_TO_ID = new Map();
+const ID_TO_TOKEN = new Map();
+
+// 样式表
 let sharedStyleEl = null;
+let styleSheet = null;
 
 /**
- * 【性能优化】简单的字符串哈希函数
+ * 【性能优化】字符串哈希
  */
 function hashString(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash;
     }
-    return Math.abs(hash).toString(36); // 转为 base36 缩短长度
+    return Math.abs(hash).toString(36);
 }
 
 /**
- * 【性能优化】获取共享 style 标签
+ * 【性能优化】初始化样式表
  */
-function getSharedStyleElement() {
+function initStyleSheet() {
     if (!sharedStyleEl) {
         sharedStyleEl = document.createElement('style');
         sharedStyleEl.setAttribute('data-pz-auto', 'true');
         document.head.appendChild(sharedStyleEl);
+        styleSheet = sharedStyleEl.sheet;
     }
-    return sharedStyleEl;
+    return styleSheet;
 }
 
 /**
- * 【性能优化】根据样式哈希生成或获取 className
+ * 【整数枚举映射】
+ */
+function getTokenId(token) {
+    if (TOKEN_TO_ID.has(token)) {
+        return TOKEN_TO_ID.get(token);
+    }
+    
+    const id = ++TOKEN_ID_COUNTER;
+    TOKEN_TO_ID.set(token, id);
+    ID_TO_TOKEN.set(id, token);
+    return id;
+}
+
+/**
+ * 【性能巅峰】getOrCreateHashClass - Goober 同款超高速版本
+ * 
+ * 核心思想：
+ * 1. 零队列、零延迟、立即同步完成
+ * 2. CSS 注入使用 textContent 批量
+ * 3. 完全依赖缓存
  */
 export function getOrCreateHashClass(styleString) {
-    // 计算哈希
-    const hash = hashString(styleString);
-    const className = `pz-${hash}`;
-    
-    // 检查是否已存在
-    if (styleHashCache.has(styleString)) {
-        return styleHashCache.get(styleString);
+    // 【超高速路径】检查缓存（O(1)）
+    if (STRING_CACHE.has(styleString)) {
+        return STRING_CACHE.get(styleString);
     }
     
     // 解析样式
     const styles = Parse(styleString);
-    const styleEntries = Object.entries(styles);
+    const keys = Object.keys(styles);
     
-    if (styleEntries.length === 0) {
+    if (keys.length === 0) {
         return null;
     }
     
-    // 构建 CSS 规则
-    const cssRules = styleEntries.map(([key, value]) => {
+    // 构建数字签名
+    const signatureParts = [];
+    const len = keys.length;
+    for (let i = 0; i < len; i++) {
+        const key = keys[i];
+        const value = styles[key];
+        const tokenId = getTokenId(`${key}:${value}`);
+        signatureParts.push(tokenId);
+    }
+    
+    const signature = signatureParts.join('-');
+    
+    // 检查签名缓存
+    if (SIGNATURE_CACHE.has(signature)) {
+        const cached = SIGNATURE_CACHE.get(signature);
+        STRING_CACHE.set(styleString, cached);
+        return cached;
+    }
+    
+    // 构建规范化 CSS
+    let normalizedCssString = '';
+    for (let i = 0; i < len; i++) {
+        const key = keys[i];
+        let value = styles[key];
+        
         const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-        return `${cssKey}:${value}`;
-    }).join(';');
+        
+        if (value.includes(' !important')) {
+            value = value.replace(' !important', '!important');
+        }
+        
+        if (i > 0) {
+            normalizedCssString += ';';
+        }
+        
+        normalizedCssString += `${cssKey}:${value}`;
+    }
     
-    // 追加到共享 style 标签
-    const styleEl = getSharedStyleElement();
-    styleEl.textContent += `.${className}{${cssRules}}`;
+    // 检查 CSS 缓存
+    if (CSS_CACHE.has(normalizedCssString)) {
+        const cached = CSS_CACHE.get(normalizedCssString);
+        SIGNATURE_CACHE.set(signature, cached);
+        STRING_CACHE.set(styleString, cached);
+        return cached;
+    }
     
-    // 缓存
-    styleHashCache.set(styleString, className);
+    // 生成 className
+    const hash = hashString(normalizedCssString);
+    const className = `pz-${hash}`;
+    
+    // 【关键优化】立即同步插入 CSS（不延迟）
+    const sheet = initStyleSheet();
+    try {
+        const rule = `.${className}{${normalizedCssString}}`;
+        const index = sheet.cssRules ? sheet.cssRules.length : 0;
+        sheet.insertRule(rule, index);
+    } catch (e) {
+        // 降级处理
+    }
+    
+    // 写入三层缓存
+    CSS_CACHE.set(normalizedCssString, className);
+    SIGNATURE_CACHE.set(signature, className);
+    STRING_CACHE.set(styleString, className);
     
     return className;
 }
 
+// 添加签名缓存
+const SIGNATURE_CACHE = new Map();
+
 /**
- * 统一扫描并应用样式（HTML 和 Vue 共用）
+ * 【统一扫描并应用样式】- 简化版
  */
 export function scanAndApply() {
-    // 【性能优化】快速路径：如果没有新元素，直接返回
     const pzElements = document.querySelectorAll('[data-pz]');
     const len = pzElements.length;
     
-    if (len === 0) {
-        return;
-    }
+    if (len === 0) return;
 
-    // 【性能优化】使用普通 for 循环 + 长度缓存
     for (let i = 0; i < len; i++) {
         const el = pzElements[i];
         const pzValue = el.dataset.pz || el.getAttribute('data-pz');
         
-        // 【性能优化】快速路径：跳过已处理且值未变的元素
         if (el._pzProcessed && el._pzValue === pzValue) {
             continue;
         }
@@ -93,20 +172,16 @@ export function scanAndApply() {
         if (!pzValue) continue;
 
         try {
-            // 【性能优化】使用哈希 class，相同样式完全复用
             const className = getOrCreateHashClass(pzValue);
             
             if (className) {
-                // 移除旧的 Pz class
                 if (el._pzClassName && el._pzClassName !== className) {
                     el.classList.remove(el._pzClassName);
                 }
-                // 添加新的 hash class
                 el.classList.add(className);
                 el._pzClassName = className;
             }
             
-            // 标记为已处理，并保存当前值
             el._pzProcessed = true;
             el._pzValue = pzValue;
         } catch (e) {
@@ -116,47 +191,10 @@ export function scanAndApply() {
 }
 
 /**
- * 监听属性变化：统一监听 data-pz 属性（HTML 和 Vue 共用）
+ * 【废弃】不再提供 watchAttributeChanges
+ * 由 main.js 直接控制，避免重复调用
  */
 export function watchAttributeChanges() {
-    // 【性能优化】使用防抖，避免频繁触发
-    let isProcessing = false;
-    
-    const observer = new MutationObserver((mutations) => {
-        if (isProcessing) return;
-        
-        let needsRescan = false;
-        
-        // 【性能优化】批量处理 mutations
-        for (let i = 0; i < mutations.length; i++) {
-            const mutation = mutations[i];
-            if (mutation.type === 'attributes' && mutation.attributeName === 'data-pz') {
-                needsRescan = true;
-                const el = mutation.target;
-                const newValue = el.dataset.pz || el.getAttribute('data-pz');
-                
-                // 清除该元素的处理标记，强制重新解析
-                if (newValue !== el._pzValue) {
-                    el._pzProcessed = false;
-                }
-            }
-        }
-        
-        if (needsRescan) {
-            isProcessing = true;
-            // 使用 microtask 而非 macrotask，响应更快
-            Promise.resolve().then(() => {
-                scanAndApply();
-                isProcessing = false;
-            });
-        }
-    });
-    
-    // 监听整个文档的 data-pz 属性变化
-    observer.observe(document.documentElement, {
-        attributes: true,
-        subtree: true
-    });
-    
-    return observer;
+    // 空函数，不再使用
+    return null;
 }

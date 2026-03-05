@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Display & Box Model 演示</title>
+    <style>
+        /* --- 全局样式 (为了演示好看) --- */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #333; background: #f9fafb; padding: 2rem; }
+        h2 { border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; margin-top: 2rem; color: #111827; }
+        h3 { font-size: 1.1rem; color: #4b5563; margin-top: 1.5rem; }
+        .demo-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .code-snippet { background: #1f2937; color: #a5f3fc; padding: 0.5rem 0.8rem; border-radius: 4px; font-family: monospace; font-size: 0.9em; display: inline-block; margin-bottom: 1rem; }
+
+        /* 通用子元素样式 (用于对比) */
+        .item {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+        }
+        /* 特意给 item 设置宽高，用来测试 inline 是否生效 */
+        .item-with-size { width: 150px; height: 80px; }
+
+        /* --- 演示 1: 基础显示模式 (Block vs Inline vs Inline-Block) --- */
+        .demo-basic-row { border: 2px dashed #cbd5e1; padding: 10px; background: #f1f5f9; margin-bottom: 10px; }
+        .label { font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 5px; }
+
+        /* 核心 CSS 类模拟 */
+        .d-block { display: block; }
+        .d-inline { display: inline; }
+        .d-inline-block { display: inline-block; }
+
+        /* --- 演示 2: 布局容器魔法 (Flex vs Grid vs Table) --- */
+        /* 同样的 HTML 结构，不同的父级 display */
+        .container-flex { display: flex; background: #eff6ff; border: 1px solid #bfdbfe; }
+        .container-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .container-table { display: table; width: 100%; background: #fff7ed; border: 1px solid #fed7aa; }
+        .container-table > div { display: table-cell; border: 1px solid #fdba74; padding: 10px; } /* 模拟单元格 */
+
+        /* --- 演示 3: 特殊行为 --- */
+        .d-hidden { display: none; } /* 完全消失 */
+        .d-contents { display: contents; } /* 自身消失，子代提升 */
+        .d-flow-root { display: flow-root; } /* 创建 BFC，清除浮动 */
+
+        .floater { float: left; width: 100px; height: 100px; background: #f43f5e; color: white; margin-right: 10px; }
+        .bg-gray { background: #e5e7eb; padding: 10px; }
+
+    </style>
+</head>
+<body>
+
+<h1>📦 CSS Display & Box Model 深度演示</h1>
+<p>以下演示展示了 <code>display</code> 属性如何从根本上改变元素的盒模型行为和布局方式。</p>
+
+<!-- ================= 演示 1: 基础盒模型行为 ================= -->
+<div class="demo-box">
+    <h2>1. 基础显示模式 (Block vs Inline vs Inline-Block)</h2>
+    <p>所有子元素都设置了 <code>width: 150px; height: 80px;</code> 和 <code>margin: 5px;</code>。观察它们的差异。</p>
+
+    <!-- Block -->
+    <div class="label">A. <code>display: block</code> (块级)</div>
+    <div class="demo-basic-row">
+        <div class="item d-block item-with-size">Box 1 (Block)</div>
+        <div class="item d-block item-with-size">Box 2 (Block)</div>
+        <div class="item d-block item-with-size">Box 3 (Block)</div>
+    </div>
+    <p><strong>现象：</strong> 每个盒子独占一行，无视宽度限制（除非设了 width），宽高设置<strong>生效</strong>。</p>
+
+    <!-- Inline -->
+    <div class="label">B. <code>display: inline</code> (行内)</div>
+    <div class="demo-basic-row">
+        <div class="item d-inline item-with-size">Box 1 (Inline)</div>
+        <div class="item d-inline item-with-size">Box 2 (Inline)</div>
+        <div class="item d-inline item-with-size">Box 3 (Inline)</div>
+    </div>
+    <p><strong>现象：</strong> 盒子排在一行，<strong>宽高设置失效</strong> (由内容决定大小)，<code>margin-top/bottom</code> 失效。它们像文字一样流动。</p>
+
+    <!-- Inline-Block -->
+    <div class="label">C. <code>display: inline-block</code> (行内块)</div>
+    <div class="demo-basic-row">
+        <div class="item d-inline-block item-with-size">Box 1 (IB)</div>
+        <div class="item d-inline-block item-with-size">Box 2 (IB)</div>
+        <div class="item d-inline-block item-with-size">Box 3 (IB)</div>
+    </div>
+    <p><strong>现象：</strong> 盒子排在一行 (不换行)，但<strong>宽高设置生效</strong>！这是制作按钮、卡片的完美选择。</p>
+</div>
+
+<!-- ================= 演示 2: 布局容器魔法 ================= -->
+<div class="demo-box">
+    <h2>2. 布局容器开关 (Parent Display Change)</h2>
+    <p>注意：下面的三组 HTML 结构<strong>完全一样</strong> (都是几个 div)，仅仅因为父元素的 <code>display</code> 不同，布局彻底改变。</p>
+
+    <!-- Flex -->
+    <div class="label">A. 父元素 <code>display: flex</code></p>
+        <div class="container-flex">
+            <div class="item">Item 1</div>
+            <div class="item">Item 2</div>
+            <div class="item">Item 3</div>
+            <div class="item">Item 4</div>
+        </div>
+        <p><strong>效果：</strong> 子元素自动排成一行 (主轴)，默认不 wrap。这是做导航栏、列表的神器。</p>
+
+        <!-- Grid -->
+        <div class="label">B. 父元素 <code>display: grid</code> (配合 grid-template-columns)</p>
+            <div class="container-grid">
+                <div class="item">Item 1</div>
+                <div class="item">Item 2</div>
+                <div class="item">Item 3</div>
+                <div class="item">Item 4</div>
+                <div class="item">Item 5</div>
+                <div class="item">Item 6</div>
+            </div>
+            <p><strong>效果：</strong> 子元素进入二维网格。这里设置了 3 列，自动换行。这是做仪表盘、图片墙的神器。</p>
+
+            <!-- Table -->
+            <div class="label">C. 父元素 <code>display: table</code></p>
+                <div class="container-table">
+                    <div class="item">Cell 1</div>
+                    <div class="item">Cell 2</div>
+                    <div class="item">Cell 3</div>
+                </div>
+                <p><strong>效果：</strong> 子元素表现得像表格单元格，等高，自动均分宽度。虽然老旧，但在某些对齐场景依然有效。</p>
+            </div>
+
+            <!-- ================= 演示 3: 特殊行为 ================= -->
+            <div class="demo-box">
+                <h2>3. 特殊行为 (Hidden, Contents, Flow-Root)</h2>
+
+                <!-- Hidden -->
+                <div class="label">A. <code>display: none</code> (.hidden)</div>
+                <div class="demo-basic-row">
+                    <div class="item">Visible</div>
+                    <div class="item d-hidden">Gone! (我不占任何空间)</div>
+                    <div class="item">Visible</div>
+                </div>
+                <p><strong>现象：</strong> 中间的蓝色盒子彻底消失了，右边的盒子紧贴着左边的盒子。它不在文档流中。</p>
+                <hr style="border:0; border-top:1px solid #eee; margin: 10px 0;">
+
+                <!-- Contents -->
+                <div class="label">B. <code>display: contents</code> (DOM 消失)</div>
+                <div style="border: 2px solid red; padding: 10px;" class="label" id="parent-contents">
+                    红色边框父元素 (Grid)
+                    <div style="display: contents;">
+                        <!-- 这个 div 本身消失了，它的子元素直接变成了红色父元素的子元素 -->
+                        <div class="item" style="background: #10b981;">Green Child 1</div>
+                        <div class="item" style="background: #10b981;">Green Child 2</div>
+                    </div>
+                </div>
+                <p><strong>现象：</strong> 中间那个包裹层（原本可能有背景色或边框）“消失”了，绿色的子元素直接受最外层红色 Grid 容器的控制。用于解决嵌套过深导致的布局问题。</p>
+                <hr style="border:0; border-top:1px solid #eee; margin: 10px 0;">
+
+                <!-- Flow Root -->
+                <div class="label">C. <code>display: flow-root</code> (现代 Clearfix)</div>
+
+                <div class="label">❌ 没有 flow-root (高度塌陷):</div>
+                <div class="bg-gray" style="margin-bottom: 15px;">
+                    <div class="floater">Float Left</div>
+                    <p>文字环绕... 父元素灰色背景没有包住红色的浮动块，高度塌陷了！</p>
+                </div>
+
+                <div class="label">✅ 加上 flow-root (自动清除):</div>
+                <div class="bg-gray d-flow-root">
+                    <div class="floater">Float Left</div>
+                    <p>文字环绕... 父元素灰色背景现在完美包住了红色的浮动块！不需要伪元素 clearfix。</p>
+                </div>
+                <p><strong>现象：</strong> `flow-root` 创建了一个新的块级格式化上下文 (BFC)，自动包含内部的浮动元素，是现代清除浮动的最佳实践。</p>
+            </div>
+
+</body>
+</html>

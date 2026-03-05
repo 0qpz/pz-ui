@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Flexbox 全方位演示</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --bg-color: #f4f7f6;
+            --box-color: #e74c3c;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1, h2, h3 { margin-top: 0; }
+
+        /* 布局结构 */
+        .container-wrapper {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-panel {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .demo-area {
+            flex: 2;
+            min-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: auto;
+        }
+
+        /* 控件样式 */
+        .control-group {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .control-group:last-child { border-bottom: none; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .value-display {
+            font-family: monospace;
+            color: var(--primary-color);
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* --- Flex 容器演示区样式 --- */
+        #flex-container {
+            display: flex; /* 默认开启 flex */
+            background-color: #ecf0f1;
+            border: 2px dashed #bdc3c7;
+            height: 300px;
+            padding: 10px;
+            gap: 10px;
+            transition: all 0.3s ease;
+            overflow: auto;
+        }
+
+        .flex-item {
+            background-color: var(--box-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            min-width: 50px;
+            min-height: 50px;
+            position: relative;
+        }
+
+        .flex-item::after {
+            content: attr(data-index);
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
+        /* 特定项的样式用于演示 flex 属性 */
+        #item-2 { background-color: #f39c12; } /* 高亮第2个元素用于测试 */
+        #item-2::before {
+            content: "当前测试项";
+            position: absolute;
+            bottom: -25px;
+            color: #f39c12;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .code-snippet {
+            background: #2d3436;
+            color: #fab1a0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+        }
+
+        .note {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<h1>CSS Flexbox 全配置交互式演示</h1>
+<p>左侧调整参数，右侧实时查看效果。重点关注橙色方块（第2项）的变化。</p>
+
+<div class="container-wrapper">
+    <!-- 控制面板 -->
+    <div class="control-panel">
+
+        <h2>1. 容器属性 (Flex Container)</h2>
+        <div class="control-group">
+            <label>flex-direction (主轴方向)</label>
+            <select id="inp-direction" onchange="updateStyles()">
+                <option value="row">row (默认：水平从左到右)</option>
+                <option value="row-reverse">row-reverse (水平从右到左)</option>
+                <option value="column">column (垂直从上到下)</option>
+                <option value="column-reverse">column-reverse (垂直从下到上)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>flex-wrap (换行策略)</label>
+            <select id="inp-wrap" onchange="updateStyles()">
+                <option value="nowrap">nowrap (默认：不换行，挤压)</option>
+                <option value="wrap">wrap (换行，从上到下)</option>
+                <option value="wrap-reverse">wrap-reverse (换行，从下到上)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>justify-content (主轴对齐)</label>
+            <select id="inp-justify" onchange="updateStyles()">
+                <option value="flex-start">flex-start (起点)</option>
+                <option value="flex-end">flex-end (终点)</option>
+                <option value="center">center (居中)</option>
+                <option value="space-between">space-between (两端对齐)</option>
+                <option value="space-around">space-around (环绕分布)</option>
+                <option value="space-evenly">space-evenly (均匀分布)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>align-items (交叉轴对齐 - 单行)</label>
+            <select id="inp-align-items" onchange="updateStyles()">
+                <option value="stretch">stretch (默认：拉伸填满)</option>
+                <option value="flex-start">flex-start (起点)</option>
+                <option value="flex-end">flex-end (终点)</option>
+                <option value="center">center (居中)</option>
+                <option value="baseline">baseline (基线对齐)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>align-content (交叉轴对齐 - 多行)</label>
+            <select id="inp-align-content" onchange="updateStyles()">
+                <option value="normal">normal (默认)</option>
+                <option value="flex-start">flex-start</option>
+                <option value="flex-end">flex-end</option>
+                <option value="center">center</option>
+                <option value="space-between">space-between</option>
+                <option value="space-around">space-around</option>
+                <option value="stretch">stretch (拉伸行高)</option>
+            </select>
+            <div class="note">* 仅在 flex-wrap: wrap 且有多行时生效</div>
+        </div>
+
+        <hr>
+
+        <h2>2. 项目属性 (Flex Item)</h2>
+        <p style="font-size:0.9rem; color:#666;">针对 <span style="color:#f39c12; font-weight:bold;">橙色方块 (Item 2)</span> 的设置</p>
+
+        <div class="control-group">
+            <label>flex (简写: grow shrink basis)</label>
+            <select id="inp-flex-preset" onchange="applyFlexPreset()">
+                <option value="custom">-- 自定义下方数值 --</option>
+                <option value="1">flex: 1 (平分空间)</option>
+                <option value="auto">flex: auto (1 1 auto)</option>
+                <option value="none">flex: none (0 0 auto - 固定大小)</option>
+                <option value="0 0 100px">flex: 0 0 100px (固定宽100)</option>
+                <option value="2 1 0%">flex: 2 1 0% (放大优先级高)</option>
+                <option value="0 0 auto">flex: 0 0 auto (内容决定大小)</option>
+            </select>
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <div style="flex:1">
+                    <label>Grow <span id="val-grow" class="value-display">1</span></label>
+                    <input type="range" id="inp-grow" min="0" max="5" step="0.5" value="1" oninput="updateFlexCustom()">
+                </div>
+                <div style="flex:1">
+                    <label>Shrink <span id="val-shrink" class="value-display">1</span></label>
+                    <input type="range" id="inp-shrink" min="0" max="5" step="0.5" value="1" oninput="updateFlexCustom()">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <label>Basis (基础大小)</label>
+                <select id="inp-basis-type" onchange="updateFlexCustom()" style="width: 48%; display:inline-block;">
+                    <option value="auto">auto</option>
+                    <option value="px">px</option>
+                    <option value="%">%</option>
+                </select>
+                <input type="number" id="inp-basis-val" value="0" style="width: 48%; display:inline-block;" oninput="updateFlexCustom()">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>order (排序顺序)</label>
+            <input type="range" id="inp-order" min="-5" max="5" value="0" oninput="updateStyles()">
+            <div class="note">负数在前，正数在后。默认均为 0。</div>
+        </div>
+
+        <div class="control-group">
+            <label>align-self (单独交叉轴对齐)</label>
+            <select id="inp-align-self" onchange="updateStyles()">
+                <option value="auto">auto (跟随容器 align-items)</option>
+                <option value="flex-start">flex-start</option>
+                <option value="flex-end">flex-end</option>
+                <option value="center">center</option>
+                <option value="baseline">baseline</option>
+                <option value="stretch">stretch</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 演示区域 -->
+    <div class="demo-area">
+        <h3>实时预览</h3>
+        <div id="flex-container">
+            <div class="flex-item" data-index="1" style="width: 80px;">1</div>
+            <div class="flex-item" data-index="2" id="item-2" style="width: 80px;">2 (Test)</div>
+            <div class="flex-item" data-index="3" style="width: 80px;">3</div>
+            <div class="flex-item" data-index="4" style="width: 80px;">4</div>
+            <div class="flex-item" data-index="5" style="width: 80px;">5</div>
+            <div class="flex-item" data-index="6" style="width: 80px;">6</div>
+            <div class="flex-item" data-index="7" style="width: 80px;">7</div>
+            <div class="flex-item" data-index="8" style="width: 80px;">8</div>
+        </div>
+
+        <h3>生成的 CSS 代码</h3>
+        <div class="code-snippet" id="code-output">
+            /* CSS will appear here */
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateStyles() {
+        const container = document.getElementById('flex-container');
+        const item2 = document.getElementById('item-2');
+        const codeOutput = document.getElementById('code-output');
+
+        // 获取容器属性值
+        const direction = document.getElementById('inp-direction').value;
+        const wrap = document.getElementById('inp-wrap').value;
+        const justify = document.getElementById('inp-justify').value;
+        const alignItems = document.getElementById('inp-align-items').value;
+        const alignContent = document.getElementById('inp-align-content').value;
+
+        // 获取项目属性值
+        const order = document.getElementById('inp-order').value;
+        const alignSelf = document.getElementById('inp-align-self').value;
+
+        // 构建 Flex 简写值
+        let flexVal = "";
+        const basisType = document.getElementById('inp-basis-type').value;
+        const basisVal = document.getElementById('inp-basis-val').value;
+        const grow = document.getElementById('inp-grow').value;
+        const shrink = document.getElementById('inp-shrink').value;
+
+        if (basisType === 'auto') {
+            flexVal = `${grow} ${shrink} auto`;
+        } else {
+            flexVal = `${grow} ${shrink} ${basisVal}${basisType}`;
+        }
+
+        // 应用样式到容器
+        container.style.flexDirection = direction;
+        container.style.flexWrap = wrap;
+        container.style.justifyContent = justify;
+        container.style.alignItems = alignItems;
+        container.style.alignContent = alignContent;
+
+        // 应用样式到项目 (Item 2)
+        item2.style.flex = flexVal;
+        item2.style.order = order;
+        item2.style.alignSelf = alignSelf;
+
+        // 更新代码显示
+        let cssText = `.container {\n`;
+        cssText += `  display: flex;\n`;
+        cssText += `  flex-direction: ${direction};\n`;
+        cssText += `  flex-wrap: ${wrap};\n`;
+        cssText += `  justify-content: ${justify};\n`;
+        cssText += `  align-items: ${alignItems};\n`;
+        if(wrap !== 'nowrap') cssText += `  align-content: ${alignContent};\n`;
+        cssText += `}\n\n`;
+
+        cssText += `.item-2 {\n`;
+        cssText += `  flex: ${flexVal};\n`;
+        cssText += `  order: ${order};\n`;
+        cssText += `  align-self: ${alignSelf};\n`;
+        cssText += `}`;
+
+        codeOutput.textContent = cssText;
+    }
+
+    function applyFlexPreset() {
+        const preset = document.getElementById('inp-flex-preset').value;
+        if (preset === 'custom') return;
+
+        // 解析预设值来更新输入框，以便用户看到对应的数值
+        // 简单处理几种常见情况
+        if (preset === '1') {
+            setInputs(1, 1, '0', '%');
+        } else if (preset === 'auto') {
+            setInputs(1, 1, 0, 'auto');
+        } else if (preset === 'none') {
+            setInputs(0, 0, 0, 'auto');
+        } else if (preset === '0 0 100px') {
+            setInputs(0, 0, 100, 'px');
+        } else if (preset === '2 1 0%') {
+            setInputs(2, 1, 0, '%');
+        } else if (preset === '0 0 auto') {
+            setInputs(0, 0, 0, 'auto');
+        }
+        updateStyles();
+    }
+
+    function setInputs(g, s, b, type) {
+        document.getElementById('inp-grow').value = g;
+        document.getElementById('inp-shrink').value = s;
+        document.getElementById('inp-basis-val').value = (type === 'auto') ? 0 : b;
+        document.getElementById('inp-basis-type').value = type;
+        updateFlexCustom(); // 更新显示的数字
+    }
+
+    function updateFlexCustom() {
+        // 仅更新界面上显示的数字标签
+        document.getElementById('val-grow').textContent = document.getElementById('inp-grow').value;
+        document.getElementById('val-shrink').textContent = document.getElementById('inp-shrink').value;
+        updateStyles();
+    }
+
+    // 初始化运行一次
+    updateStyles();
+</script>
+</body>
+</html>
